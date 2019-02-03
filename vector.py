@@ -17,7 +17,13 @@ class Vector(object):
                             "it.keys(), it.values(), or it.items()")
 
     def __iter__(self):
-        return self._it
+        return iter(self._it)
+
+    def __contains__(self, x):
+        if self._lazy:
+            raise TypeError("Iterators cannot test membership. "
+                            "Vector.concretize() will create a collection")
+        return x in self._it
 
     def __getattr__(self, attr):
         if self._lazy:
@@ -54,3 +60,5 @@ class Vector(object):
     def concretize(self):
         if self._lazy:
             self._it = list(self._it)
+            self._lazy = False
+        return self
