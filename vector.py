@@ -1,4 +1,5 @@
 from collections.abc import Iterable, Collection, Mapping
+# from itertools import chain
 
 
 class Vector(object):
@@ -15,9 +16,19 @@ class Vector(object):
             raise TypeError("Ambiguity vectorizing a map, perhaps try "
                             "it.keys(), it.values(), or it.items()")
 
+    def __iter__(self):
+        return self._it
+
     def __getattr__(self, attr):
         if self._lazy:
-            return (getattr(item, attr)() for item in self._it)
+            def method(*args, **kws):
+                def _nested(*args, **kws):
+                    for item in self._it:
+                        elem_method = getattr(type(item), attr)
+                        yield elem_method(item, *args, **kws)
+                return Vector(_nested(*args, **kws))
+            return method
+
         else:
             def method(*args, **kws):
                 cast = type(self._it)
@@ -33,3 +44,13 @@ class Vector(object):
 
     def __repr__(self):
         return "<Vector of %s>" % repr(self._it)
+
+    def __len__(self):
+        if self._lazy:
+            raise TypeError("Iterators do not have a length. "
+                            "Vector.concretize() will create a collection")
+        return len(self._it)
+
+    def concretize(self):
+        if self._lazy:
+            self._it = list(self._it)
